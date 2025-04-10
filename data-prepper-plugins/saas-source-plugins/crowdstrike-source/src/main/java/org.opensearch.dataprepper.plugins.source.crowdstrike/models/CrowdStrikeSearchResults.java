@@ -13,15 +13,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CrowdStrikeSearchResults {
 
-    @JsonProperty("limit")
-    private Integer limit = null;
-
-    @JsonProperty("total")
-    private Integer total = null;
-
     @JsonProperty("resources")
     private List<CrowdStrikeItem> results = null;
 
-    @JsonProperty("Next-Page")
-    private String link = null;
 }

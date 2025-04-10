@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opensearch.dataprepper.metrics.PluginMetrics;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.CrowdStrikeSourceConfig;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.configuration.Oauth2Config;
+import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeResponse;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeSearchResults;
 import org.opensearch.dataprepper.plugins.source.source_crawler.exception.UnauthorizedException;
 import org.springframework.http.*;
@@ -20,6 +21,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -54,7 +56,7 @@ public class CrowdStrikeRestClient {
      * @param fql     input parameter.
      * @return InputStream input stream
      */
-    public CrowdStrikeSearchResults getAllContent(StringBuilder fql, String paginationLink) {
+    public CrowdStrikeResponse getAllContent(StringBuilder fql, String paginationLink) {
 
         URI uri;
         if (null != paginationLink) {
@@ -66,15 +68,18 @@ public class CrowdStrikeRestClient {
             }
         } else {
             uri = UriComponentsBuilder.fromHttpUrl(COMBINED_URL)
-                    .queryParam("limit", "100")
+                    .queryParam("limit", "10000")
+                    .queryParam("filter", fql)
                     .buildAndExpand().toUri();
         }
         return searchCallLatencyTimer.record(
                 () -> {
                     try {
-                         ResponseEntity<CrowdStrikeSearchResults> responseEntity =  invokeGetApi(uri, CrowdStrikeSearchResults.class);
-                         responseEntity.getHeaders().get("Next-Page");
-                         return responseEntity.getBody();
+                        ResponseEntity<CrowdStrikeSearchResults> responseEntity =  invokeGetApi(uri, CrowdStrikeSearchResults.class);
+                        CrowdStrikeResponse response = new CrowdStrikeResponse();
+                        response.setBody(responseEntity.getBody());
+                        response.setHeaders(responseEntity.getHeaders());
+                        return response;
                     } catch (Exception e) {
                         log.error("Error while fetching content with fql {}", fql);
                         //searchRequestsFailedCounter.increment();

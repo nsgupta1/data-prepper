@@ -14,11 +14,15 @@ import io.micrometer.core.instrument.Counter;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.dataprepper.metrics.PluginMetrics;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeItem;
+import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeResponse;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeSearchResults;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeRestClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
 
 import javax.inject.Named;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,16 +80,18 @@ public class CrowdStrikeService {
         int total = 0;
         String paginationLink = null;
         do {
-            CrowdStrikeSearchResults searchContentItems = crowdStrikeRestClient.getAllContent(fql, paginationLink);
+            CrowdStrikeResponse crowdStrikeResponse = crowdStrikeRestClient.getAllContent(fql, paginationLink);
+            CrowdStrikeSearchResults searchContentItems = crowdStrikeResponse.getBody();
             List<CrowdStrikeItem> contentList = new ArrayList<>(searchContentItems.getResults());
-            total += searchContentItems.getTotal();
+            total += contentList.size();
             log.info(String.valueOf(contentList.size()));
             //addItemsToQueue(contentList, itemInfoQueue);
             log.debug("Content items fetched so far: {}", total);
-            paginationLink = searchContentItems.getLink();
+            paginationLink = crowdStrikeResponse.getHeader("Next-Page") != null ? crowdStrikeResponse.getHeader("Next-Page").get(0) : null;
         } while (paginationLink != null);
         log.info("Number of content items found in search api call: {}", total);
     }
+
 
 
     /**
@@ -97,8 +103,10 @@ public class CrowdStrikeService {
      */
     private StringBuilder createContentFilterCriteria(CrowdStrikeSourceConfig configuration, Instant ts) {
         log.info("Creating Threat Intel filter criteria");
-        StringBuilder fql = new StringBuilder("last_updated" + ">=" + ts.toEpochMilli());
-        fql.append("sort" + "=" + "_marker" + "|asc");
+
+        StringBuilder fql = new StringBuilder()
+                .append("last_updated:>=")
+                .append(ts.minus(Duration.ofHours(1)).getEpochSecond()) ; // if you need epoch seconds;
         log.info("Created content filter criteria Falcon API query: {}", fql);
         return fql;
     }

@@ -12,6 +12,7 @@ import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.sta
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
 
 import javax.inject.Named;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
@@ -49,7 +50,7 @@ public class CrowdStrikeClient implements CrawlerClient {
     @Override
     public void setLastPollTime(Instant lastPollTime) {
         log.trace("Setting the lastPollTime: {}", lastPollTime);
-        this.lastPollTime = Instant.now();
+        this.lastPollTime = Instant.now().minus(Duration.ofMinutes(15));
     }
 
     @Override
