@@ -63,7 +63,6 @@ public class CrowdStrikeSource extends CrawlerSourcePlugin {
         log.info("Starting CrowdStrike Source Plugin... ");
         CrowdStrikeConfigHelper.validateConfig(crowdStrikeSourceConfig);
         crowdStrikeOauthConfig.initCredentials();
-        //super.setServerMetadata(service.getConfluenceServerMetadata());
         super.start(buffer);
     }
 

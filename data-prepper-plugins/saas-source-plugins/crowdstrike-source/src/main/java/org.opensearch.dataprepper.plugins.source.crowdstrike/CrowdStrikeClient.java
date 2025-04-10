@@ -2,7 +2,6 @@ package org.opensearch.dataprepper.plugins.source.crowdstrike;
 
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.dataprepper.model.acknowledgements.AcknowledgementSet;
-import org.opensearch.dataprepper.model.annotations.DataPrepperPluginConstructor;
 import org.opensearch.dataprepper.model.buffer.Buffer;
 import org.opensearch.dataprepper.model.event.Event;
 import org.opensearch.dataprepper.model.record.Record;
@@ -50,11 +49,14 @@ public class CrowdStrikeClient implements CrawlerClient {
     @Override
     public void setLastPollTime(Instant lastPollTime) {
         log.trace("Setting the lastPollTime: {}", lastPollTime);
-        this.lastPollTime = lastPollTime;
+        this.lastPollTime = Instant.now();
     }
 
     @Override
     public void executePartition(SaasWorkerProgressState state, Buffer<Record<Event>> buffer, AcknowledgementSet acknowledgementSet) {
+        log.trace("Executing the partition: {} with {} ticket(s)",
+                state.getKeyAttributes(), state.getItemIds().size());
+
 
     }
 }

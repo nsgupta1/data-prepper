@@ -7,10 +7,10 @@ import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
 
 import javax.inject.Named;
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 @Named
 @Slf4j
@@ -23,6 +23,9 @@ public class CrowdStrikeIterator implements Iterator<ItemInfo> {
     private Queue<ItemInfo> itemInfoQueue;
     private Instant lastPollTime;
     private boolean firstTime = true;
+    private final List<Future<Boolean>> futureList = new ArrayList<>();
+    private final long crawlerQWaitTimeMillis = 2000;
+
 
     @DataPrepperPluginConstructor
     CrowdStrikeIterator(CrowdStrikeService service, CrowdStrikeSourceConfig sourceConfig, PluginExecutorServiceProvider executorServiceProvider) {
@@ -42,13 +45,51 @@ public class CrowdStrikeIterator implements Iterator<ItemInfo> {
         this.firstTime = true;
     }
 
+    private void startCrawlerThreads() {
+        futureList.add(crawlerTaskExecutor.submit(() ->
+                service.getPages(sourceConfig, lastPollTime, itemInfoQueue), false));
+    }
+
     @Override
     public boolean hasNext() {
-        return false;
+        if (firstTime) {
+            log.trace("Crawling has been started");
+            startCrawlerThreads();
+            firstTime = false;
+        }
+        int timeout = HAS_NEXT_TIMEOUT;
+        while (isCrawlerRunning() && itemInfoQueue.isEmpty() && timeout > 0) {
+            try {
+                log.trace("Waiting for crawler queue to be filled for next {} seconds", timeout);
+                Thread.sleep(crawlerQWaitTimeMillis);
+                timeout--;
+            } catch (InterruptedException e) {
+                log.error("An exception has occurred while checking for the next document in crawling queue");
+                Thread.currentThread().interrupt();
+            }
+        }
+        return !this.itemInfoQueue.isEmpty();
+    }
+
+    private boolean isCrawlerRunning() {
+        boolean isRunning = false;
+        if (!futureList.isEmpty()) {
+            for (Future<Boolean> future : futureList) {
+                if (!future.isDone()) {
+                    isRunning = true;
+                    break;
+                }
+            }
+        }
+        return isRunning;
     }
 
     @Override
     public ItemInfo next() {
-        return null;
+        if (hasNext()) {
+            return this.itemInfoQueue.remove();
+        } else {
+            throw new NoSuchElementException();
+        }
     }
 }

@@ -11,8 +11,12 @@
 package org.opensearch.dataprepper.plugins.source.crowdstrike.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
+import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 import org.opensearch.dataprepper.model.plugin.PluginConfigVariable;
 
 @Getter
@@ -23,8 +27,8 @@ public class Oauth2Config {
     @JsonProperty("client_secret")
     private String clientSecret;
 
-    @JsonProperty("access_token")
-    private PluginConfigVariable accessToken;
+    @Setter
+    private String bearerToken;
 
     @AssertTrue(message = "Client ID, Client Secret are both required for Oauth2")
     private boolean isOauth2ConfigValid() {

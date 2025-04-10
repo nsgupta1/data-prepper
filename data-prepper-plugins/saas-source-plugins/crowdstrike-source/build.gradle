@@ -1,7 +1,13 @@
 plugins {
     id 'java'
+    id 'org.springframework.boot' version '2.7.0'
 }
-
+bootJar {
+    mainClass.set('org.opensearch.dataprepper.plugins.source.crowdstrike.CrowdStrikeSource')
+}
+repositories {
+    mavenCentral()
+}
 dependencies {
 
     implementation project(path: ':data-prepper-plugins:saas-source-plugins:source-crawler')
@@ -16,7 +22,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'javax.inject:javax.inject:1'
     implementation 'org.jsoup:jsoup:1.18.3'
-
+    implementation('org.springframework.boot:spring-boot-starter-webflux:2.7.0') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+    }
     implementation 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
