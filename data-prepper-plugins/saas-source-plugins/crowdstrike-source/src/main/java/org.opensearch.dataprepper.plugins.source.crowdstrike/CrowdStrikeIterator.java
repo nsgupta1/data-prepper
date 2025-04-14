@@ -20,7 +20,7 @@ public class CrowdStrikeIterator implements Iterator<ItemInfo> {
     private final CrowdStrikeService service;
     private final CrowdStrikeSourceConfig sourceConfig;
     private final ExecutorService crawlerTaskExecutor;
-    private Queue<ItemInfo> itemInfoQueue;
+    public Queue<ItemInfo> itemInfoQueue;
     private Instant lastPollTime;
     private boolean firstTime = true;
     private final List<Future<Boolean>> futureList = new ArrayList<>();

@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -41,14 +40,14 @@ public class CrowdStrikeRestClient {
     final Counter authFailures;
         RestTemplate restTemplate = new RestTemplate();
 
-        public CrowdStrikeRestClient(PluginMetrics pluginMetrics, CrowdStrikeSourceConfig sourceOauthConfig) {
-            this.authConfig = sourceOauthConfig.getOauth2Config();
-            this.authFailures = pluginMetrics.counter(AUTH_FAILURES_COUNTER);
-            this.searchCallLatencyTimer = pluginMetrics.timer("searchCallLatencyTimer");
-            this.httpClient = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build();
-        }
+    public CrowdStrikeRestClient(PluginMetrics pluginMetrics, CrowdStrikeSourceConfig sourceOauthConfig) {
+        this.authConfig = sourceOauthConfig.getOauth2Config();
+        this.authFailures = pluginMetrics.counter(AUTH_FAILURES_COUNTER);
+        this.searchCallLatencyTimer = pluginMetrics.timer("searchCallLatencyTimer");
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+    }
 
     /**
      * Method to get all Contents in a paginated fashion.
@@ -70,7 +69,9 @@ public class CrowdStrikeRestClient {
             uri = UriComponentsBuilder.fromHttpUrl(COMBINED_URL)
                     .queryParam("limit", "10000")
                     .queryParam("filter", fql)
-                    .buildAndExpand().toUri();
+                    .encode()
+                    .buildAndExpand()
+                    .toUri();
         }
         return searchCallLatencyTimer.record(
                 () -> {

@@ -1,7 +1,13 @@
 package org.opensearch.dataprepper.plugins.source.crowdstrike.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CrowdStrikeItem {
 
     /**
@@ -28,7 +34,9 @@ public class CrowdStrikeItem {
     @JsonProperty("published_date")
     private long publishedDate = 0L;
 
-
+    @JsonProperty("malicious_confidence")
+    private String maliciousConfidence = null;
+    
     /**
      * The epoch timestamp of the last updated date of IOC.
      */

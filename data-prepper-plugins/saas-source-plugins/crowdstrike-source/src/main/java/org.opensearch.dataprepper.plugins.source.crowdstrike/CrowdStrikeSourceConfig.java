@@ -19,7 +19,7 @@ import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerSour
 @Getter
 public class CrowdStrikeSourceConfig implements CrawlerSourceConfig {
 
-    private static final int DEFAULT_BATCH_SIZE = 50;
+    private static final int DEFAULT_BATCH_SIZE = 10000;
 
     /**
      * Batch size for fetching tickets

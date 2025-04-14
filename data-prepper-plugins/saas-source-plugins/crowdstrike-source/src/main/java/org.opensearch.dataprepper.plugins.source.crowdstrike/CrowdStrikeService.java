@@ -18,10 +18,9 @@ import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeR
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeSearchResults;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeRestClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
+import org.springframework.util.CollectionUtils;
 
 import javax.inject.Named;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,7 +51,9 @@ public class CrowdStrikeService {
         this.searchResultsFoundCounter = pluginMetrics.counter(SEARCH_RESULTS_FOUND);
     }
 
-
+    public CrowdStrikeResponse getAllContent(StringBuilder fql, String paginationLink) {
+        return crowdStrikeRestClient.getAllContent(fql, paginationLink);
+    }
 
     /**
      * Get Confluence entities.
@@ -85,14 +86,23 @@ public class CrowdStrikeService {
             List<CrowdStrikeItem> contentList = new ArrayList<>(searchContentItems.getResults());
             total += contentList.size();
             log.info(String.valueOf(contentList.size()));
-            //addItemsToQueue(contentList, itemInfoQueue);
+            addItemsToQueue(contentList, itemInfoQueue);
             log.debug("Content items fetched so far: {}", total);
-            paginationLink = crowdStrikeResponse.getHeader("Next-Page") != null ? crowdStrikeResponse.getHeader("Next-Page").get(0) : null;
+            paginationLink = CollectionUtils.isEmpty(crowdStrikeResponse.getHeader("Next-Page")) ? null : crowdStrikeResponse.getHeader("Next-Page").get(0);
         } while (paginationLink != null);
         log.info("Number of content items found in search api call: {}", total);
     }
 
-
+    /**
+     * Add items to queue.
+     *
+     * @param contentList   Content list.
+     * @param itemInfoQueue Item info queue.
+     */
+    private void addItemsToQueue(List<CrowdStrikeItem> contentList, Queue<ItemInfo> itemInfoQueue) {
+        contentList.forEach(contentItem -> itemInfoQueue.add(CrowdStrikeItemInfo.builder()
+                .withEventTime(Instant.now()).withContentBean(contentItem).build()));
+    }
 
     /**
      * Method for creating Content Filter Criteria.
