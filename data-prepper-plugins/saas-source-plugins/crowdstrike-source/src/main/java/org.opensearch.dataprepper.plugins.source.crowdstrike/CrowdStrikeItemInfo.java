@@ -53,7 +53,7 @@ public class CrowdStrikeItemInfo implements ItemInfo {
 
     @Override
     public String getPartitionKey() {
-        return type + "|" + UUID.randomUUID();
+        return lastUpdated + "|" + UUID.randomUUID();
     }
 
 

@@ -65,7 +65,7 @@ public class Crawler {
                     latestModifiedTime = nextItem.getLastModifiedAt();
                 }
             }
-            createPartition(itemInfoList, coordinator);
+            client.createPartition(lastPollTime, itemInfoList, coordinator);
 
             // Check point leader progress state at every minute interval.
             Instant currentTimeInstance = Instant.now();
@@ -92,22 +92,6 @@ public class Crawler {
         leaderProgressState.setLastPollTime(updatedPollTime);
         leaderPartition.setLeaderProgressState(leaderProgressState);
         coordinator.saveProgressStateForPartition(leaderPartition, DEFAULT_EXTEND_LEASE_MINUTES);
-    }
-
-    private void createPartition(List<ItemInfo> itemInfoList, EnhancedSourceCoordinator coordinator) {
-        if (itemInfoList.isEmpty()) {
-            return;
-        }
-        ItemInfo itemInfo = itemInfoList.get(0);
-        String partitionKey = itemInfo.getPartitionKey();
-        List<String> itemIds = itemInfoList.stream().map(ItemInfo::getId).collect(Collectors.toList());
-        SaasWorkerProgressState state = new SaasWorkerProgressState();
-        state.setKeyAttributes(itemInfo.getKeyAttributes());
-        state.setItemIds(itemIds);
-        state.setExportStartTime(Instant.now());
-        state.setLoadedItems(itemInfoList.size());
-        SaasSourcePartition sourcePartition = new SaasSourcePartition(state, partitionKey);
-        coordinator.createPartition(sourcePartition);
     }
 
 }

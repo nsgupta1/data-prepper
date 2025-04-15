@@ -8,12 +8,14 @@ import org.opensearch.dataprepper.model.event.Event;
 import org.opensearch.dataprepper.model.event.EventType;
 import org.opensearch.dataprepper.model.event.JacksonEvent;
 import org.opensearch.dataprepper.model.record.Record;
+import org.opensearch.dataprepper.model.source.coordinator.enhanced.EnhancedSourceCoordinator;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeItem;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeResponse;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeSearchResults;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerSourceConfig;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.PluginExecutorServiceProvider;
+import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.partition.SaasSourcePartition;
 import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.state.SaasWorkerProgressState;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
 import org.springframework.util.CollectionUtils;
@@ -21,9 +23,7 @@ import org.springframework.util.CollectionUtils;
 import javax.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -66,16 +66,17 @@ public class CrowdStrikeClient implements CrawlerClient {
 
     @Override
     public void executePartition(SaasWorkerProgressState state, Buffer<Record<Event>> buffer, AcknowledgementSet acknowledgementSet) {
-        log.info("Executing the partition: {} with {} ticket(s)",
-                state.getKeyAttributes(), state.getItemIds().size());
+
 
         // start = state.startTime()  --> Epoch based time
         // end = state.endTime()  --> Epoch based time
-        Long startTime = Instant.now().minus(Duration.ofHours(24)).getEpochSecond();
-        Long endTime = Instant.now().getEpochSecond();
+        Long startTime = state.getExportStartTime().getEpochSecond();
+        Long endTime = state.getExportStartTime().plus(Duration.ofMinutes(5)).getEpochSecond();
         StringBuilder fql = new StringBuilder()
                 .append("last_updated:>=")
-                .append(startTime);
+                .append(startTime)
+                .append("+last_updated:<")
+                .append(endTime);
 
         String paginationLink = null;
         do {
@@ -102,6 +103,25 @@ public class CrowdStrikeClient implements CrawlerClient {
 
         if (configuration.isAcknowledgments()) {
             acknowledgementSet.complete();
+        }
+    }
+
+
+    @Override
+    public void createPartition(Instant lastPollTime, List<ItemInfo> itemInfoList, EnhancedSourceCoordinator coordinator) {
+        if (lastPollTime == Instant.EPOCH) {
+            Instant initialDate = Instant.now();
+            for (int i = 0; i < 90; i++) {
+                SaasWorkerProgressState state = new SaasWorkerProgressState();
+                state.setExportStartTime(initialDate.minus(Duration.ofDays(i)));
+                SaasSourcePartition sourcePartition = new SaasSourcePartition(state, "last_updated"+"|"+  UUID.randomUUID());
+                coordinator.createPartition(sourcePartition);
+            }
+        } else {
+            SaasWorkerProgressState state = new SaasWorkerProgressState();
+            state.setExportStartTime(lastPollTime);
+            SaasSourcePartition sourcePartition = new SaasSourcePartition(state, "last_updated"+"|"+  UUID.randomUUID());
+            coordinator.createPartition(sourcePartition);
         }
     }
 }

@@ -67,7 +67,7 @@ public class CrowdStrikeRestClient {
             }
         } else {
             uri = UriComponentsBuilder.fromHttpUrl(COMBINED_URL)
-                    .queryParam("limit", "10000")
+                    .queryParam("limit", "100")
                     .queryParam("filter", fql)
                     .encode()
                     .buildAndExpand()

@@ -4,11 +4,15 @@ import org.opensearch.dataprepper.model.acknowledgements.AcknowledgementSet;
 import org.opensearch.dataprepper.model.buffer.Buffer;
 import org.opensearch.dataprepper.model.event.Event;
 import org.opensearch.dataprepper.model.record.Record;
+import org.opensearch.dataprepper.model.source.coordinator.enhanced.EnhancedSourceCoordinator;
+import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.partition.SaasSourcePartition;
 import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.state.SaasWorkerProgressState;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
 
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Interface for Crawler client. This interface can be implemented by different saas clients.
@@ -42,4 +46,20 @@ public interface CrawlerClient {
      * @param acknowledgementSet acknowledgement set to be used to track the completion of the partition
      */
     void executePartition(SaasWorkerProgressState state, Buffer<Record<Event>> buffer, AcknowledgementSet acknowledgementSet);
+
+    default void createPartition(Instant lastPollTime, List<ItemInfo> itemInfoList, EnhancedSourceCoordinator coordinator) {
+        if (itemInfoList.isEmpty()) {
+            return;
+        }
+        ItemInfo itemInfo = itemInfoList.get(0);
+        String partitionKey = itemInfo.getPartitionKey();
+        List<String> itemIds = itemInfoList.stream().map(ItemInfo::getId).collect(Collectors.toList());
+        SaasWorkerProgressState state = new SaasWorkerProgressState();
+        state.setKeyAttributes(itemInfo.getKeyAttributes());
+        state.setItemIds(itemIds);
+        state.setExportStartTime(Instant.now());
+        state.setLoadedItems(itemInfoList.size());
+        SaasSourcePartition sourcePartition = new SaasSourcePartition(state, partitionKey);
+        coordinator.createPartition(sourcePartition);
+    }
 }

@@ -18,10 +18,7 @@ import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeR
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeSearchResults;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeRestClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
-import org.springframework.util.CollectionUtils;
-
 import javax.inject.Named;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +77,7 @@ public class CrowdStrikeService {
         StringBuilder fql = createContentFilterCriteria(configuration, timestamp);
         int total = 0;
         String paginationLink = null;
-        do {
+        //do {
             CrowdStrikeResponse crowdStrikeResponse = crowdStrikeRestClient.getAllContent(fql, paginationLink);
             CrowdStrikeSearchResults searchContentItems = crowdStrikeResponse.getBody();
             List<CrowdStrikeItem> contentList = new ArrayList<>(searchContentItems.getResults());
@@ -88,8 +85,8 @@ public class CrowdStrikeService {
             log.info(String.valueOf(contentList.size()));
             addItemsToQueue(contentList, itemInfoQueue);
             log.debug("Content items fetched so far: {}", total);
-            paginationLink = CollectionUtils.isEmpty(crowdStrikeResponse.getHeader("Next-Page")) ? null : crowdStrikeResponse.getHeader("Next-Page").get(0);
-        } while (paginationLink != null);
+            //paginationLink = CollectionUtils.isEmpty(crowdStrikeResponse.getHeader("Next-Page")) ? null : crowdStrikeResponse.getHeader("Next-Page").get(0);
+        //} while (paginationLink != null);
         log.info("Number of content items found in search api call: {}", total);
     }
 
@@ -116,7 +113,7 @@ public class CrowdStrikeService {
 
         StringBuilder fql = new StringBuilder()
                 .append("last_updated:>=")
-                .append(ts.minus(Duration.ofHours(1)).getEpochSecond()) ; // if you need epoch seconds;
+                .append(ts.getEpochSecond()) ; // if you need epoch seconds;
         log.info("Created content filter criteria Falcon API query: {}", fql);
         return fql;
     }
