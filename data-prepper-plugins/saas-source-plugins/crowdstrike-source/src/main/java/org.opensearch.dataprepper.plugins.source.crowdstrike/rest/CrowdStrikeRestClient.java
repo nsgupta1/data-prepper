@@ -52,10 +52,9 @@ public class CrowdStrikeRestClient {
     /**
      * Method to get all Contents in a paginated fashion.
      *
-     * @param fql     input parameter.
      * @return InputStream input stream
      */
-    public CrowdStrikeResponse getAllContent(StringBuilder fql, String paginationLink) {
+    public CrowdStrikeResponse getAllContent(Long startTime, Long endTime, String paginationLink) {
 
         URI uri;
         if (null != paginationLink) {
@@ -66,12 +65,23 @@ public class CrowdStrikeRestClient {
                 throw new RuntimeException("Failed to construct pagination url.", e);
             }
         } else {
-            uri = UriComponentsBuilder.fromHttpUrl(COMBINED_URL)
+            String fql1 = COMBINED_URL + String.format("?filter=last_updated:>=%d+last_updated:<%d&limit=10000", startTime, endTime);
+            String encodedFql = UriComponentsBuilder.fromHttpUrl(fql1)
+                    .encode()
+                    .toUriString();
+            String encodedFql1 = encodedFql.replace("+", "%2B");
+            try {
+                uri = new URI(encodedFql1);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+
+/*            uri = UriComponentsBuilder.fromHttpUrl(COMBINED_URL)
                     .queryParam("limit", "100")
                     .queryParam("filter", fql)
                     .encode()
                     .buildAndExpand()
-                    .toUri();
+                    .toUri();*/
         }
         return searchCallLatencyTimer.record(
                 () -> {
@@ -82,7 +92,7 @@ public class CrowdStrikeRestClient {
                         response.setHeaders(responseEntity.getHeaders());
                         return response;
                     } catch (Exception e) {
-                        log.error("Error while fetching content with fql {}", fql);
+                        log.error("Error while fetching content with fql");
                         //searchRequestsFailedCounter.increment();
                         throw e;
                     }

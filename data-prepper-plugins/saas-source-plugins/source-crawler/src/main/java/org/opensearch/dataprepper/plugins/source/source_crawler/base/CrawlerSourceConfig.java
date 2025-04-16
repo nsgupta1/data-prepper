@@ -5,7 +5,7 @@ package org.opensearch.dataprepper.plugins.source.source_crawler.base;
  */
 public interface CrawlerSourceConfig {
 
-    int DEFAULT_NUMBER_OF_WORKERS = 2;
+    int DEFAULT_NUMBER_OF_WORKERS = 25;
 
     int getBatchSize();
 

@@ -67,20 +67,19 @@ public class CrowdStrikeClient implements CrawlerClient {
     @Override
     public void executePartition(SaasWorkerProgressState state, Buffer<Record<Event>> buffer, AcknowledgementSet acknowledgementSet) {
 
-
         // start = state.startTime()  --> Epoch based time
         // end = state.endTime()  --> Epoch based time
         Long startTime = state.getExportStartTime().getEpochSecond();
-        Long endTime = state.getExportStartTime().plus(Duration.ofMinutes(5)).getEpochSecond();
+        Long endTime = state.getExportStartTime().plus(Duration.ofHours(24)).getEpochSecond();
         StringBuilder fql = new StringBuilder()
                 .append("last_updated:>=")
                 .append(startTime)
-                .append("+last_updated:<")
+                .append("+last_updated:<=")  // Using URL-safe separator
                 .append(endTime);
-
+        log.info("FQL query: {}", fql);
         String paginationLink = null;
         do {
-            CrowdStrikeResponse crowdStrikeResponse = crowdStrikeService.getAllContent(fql, paginationLink);
+            CrowdStrikeResponse crowdStrikeResponse = crowdStrikeService.getAllContent(startTime, endTime, paginationLink);
             CrowdStrikeSearchResults searchContentItems = crowdStrikeResponse.getBody();
             List<CrowdStrikeItem> contentList = new ArrayList<>(searchContentItems.getResults());
             log.info(String.valueOf(contentList.size()));

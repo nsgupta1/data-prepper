@@ -19,6 +19,7 @@ import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeS
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeRestClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
 import javax.inject.Named;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +49,8 @@ public class CrowdStrikeService {
         this.searchResultsFoundCounter = pluginMetrics.counter(SEARCH_RESULTS_FOUND);
     }
 
-    public CrowdStrikeResponse getAllContent(StringBuilder fql, String paginationLink) {
-        return crowdStrikeRestClient.getAllContent(fql, paginationLink);
+    public CrowdStrikeResponse getAllContent(Long startTime, Long endTime, String paginationLink) {
+        return crowdStrikeRestClient.getAllContent(startTime, endTime, paginationLink);
     }
 
     /**
@@ -78,7 +79,8 @@ public class CrowdStrikeService {
         int total = 0;
         String paginationLink = null;
         //do {
-            CrowdStrikeResponse crowdStrikeResponse = crowdStrikeRestClient.getAllContent(fql, paginationLink);
+            Long startTime = timestamp.minus(Duration.ofMinutes(5)).toEpochMilli();
+            CrowdStrikeResponse crowdStrikeResponse = crowdStrikeRestClient.getAllContent(startTime, timestamp.getEpochSecond(), paginationLink);
             CrowdStrikeSearchResults searchContentItems = crowdStrikeResponse.getBody();
             List<CrowdStrikeItem> contentList = new ArrayList<>(searchContentItems.getResults());
             total += contentList.size();
