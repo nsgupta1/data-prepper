@@ -1,0 +1,137 @@
+package org.opensearch.dataprepper.plugins.source.crowdstrike.rest;
+
+import com.google.common.annotations.VisibleForTesting;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
+import org.opensearch.dataprepper.metrics.PluginMetrics;
+import org.opensearch.dataprepper.plugins.source.crowdstrike.CrowdStrikeSourceConfig;
+import org.opensearch.dataprepper.plugins.source.crowdstrike.configuration.AuthenticationConfig;
+import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeApiResponse;
+import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeIndicatorResult;
+import org.opensearch.dataprepper.plugins.source.source_crawler.exception.UnauthorizedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.inject.Named;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+
+@Named
+public class CrowdStrikeRestClient {
+
+    public static final List<Integer> RETRY_ATTEMPT_SLEEP_TIME = List.of(1, 2, 5, 10, 20, 40);
+    static final String AUTH_FAILURES_COUNTER = "authFailures";
+    private int sleepTimeMultiplier = 1000;
+    private final Timer searchCallLatencyTimer;
+    private static final String BASE_URL = "https://api.crowdstrike.com/";
+    private static final String COMBINED_URL = "https://api.crowdstrike.com/intel/combined/indicators/v1";
+    private static final Logger log = LoggerFactory.getLogger(CrowdStrikeRestClient.class);
+    final Counter authFailures;
+    RestTemplate restTemplate = new RestTemplate();
+
+    public CrowdStrikeRestClient(PluginMetrics pluginMetrics) {
+        this.authFailures = pluginMetrics.counter(AUTH_FAILURES_COUNTER);
+        this.searchCallLatencyTimer = pluginMetrics.timer("searchCallLatencyTimer");
+    }
+
+    /**
+     * Method to get all Contents in a paginated fashion.
+     *
+     * @return InputStream input stream
+     */
+    public CrowdStrikeApiResponse getAllContent(Long startTime, Long endTime, String paginationLink, String bearerToken) {
+
+        URI uri;
+        if (null != paginationLink) {
+            try {
+                String urlString =  BASE_URL + paginationLink;
+                uri = new URI(urlString);
+            } catch (URISyntaxException  e) {
+                throw new RuntimeException("Failed to construct pagination url.", e);
+            }
+        } else {
+            String fql1 = COMBINED_URL + String.format("?filter=last_updated:>=%d+last_updated:<%d&limit=10000", startTime, endTime);
+            String encodedFql = UriComponentsBuilder.fromHttpUrl(fql1)
+                    .encode()
+                    .toUriString();
+            String encodedFql1 = encodedFql.replace("+", "%2B");
+            try {
+                uri = new URI(encodedFql1);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return searchCallLatencyTimer.record(
+                () -> {
+                    try {
+                        ResponseEntity<CrowdStrikeIndicatorResult> responseEntity =  invokeGetApi(uri, CrowdStrikeIndicatorResult.class, bearerToken);
+                        CrowdStrikeApiResponse response = new CrowdStrikeApiResponse();
+                        response.setBody(responseEntity.getBody());
+                        response.setHeaders(responseEntity.getHeaders());
+                        return response;
+                    } catch (Exception e) {
+                        log.error("Error while fetching content with fql");
+                        //searchRequestsFailedCounter.increment();
+                        throw e;
+                    }
+                }
+        );
+    }
+
+    public <T> ResponseEntity<T> invokeGetApi(URI uri, Class<T> responseType, String bearerToken) {
+        // Create headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + bearerToken);
+        headers.set("Content-Type", "application/json");
+        headers.set("Accept", "application/json");
+
+        // Create HTTP entity with headers
+        HttpEntity<?> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            return restTemplate.exchange(
+                    uri,
+                    HttpMethod.GET,
+                    requestEntity,
+                    responseType
+            );
+        } catch (HttpClientErrorException e) {
+            handleHttpClientError(e);
+            throw e;
+        } catch (RestClientException e) {
+            log.error("Error making REST call: ", e);
+            throw new RuntimeException("Failed to make REST call", e);
+        }
+    }
+
+    private void handleHttpClientError(HttpClientErrorException e) {
+        switch (e.getStatusCode()) {
+            case UNAUTHORIZED:
+                log.error("Unauthorized access. Check bearer token");
+                throw new UnauthorizedException("Invalid bearer token");
+            case FORBIDDEN:
+                log.error("Forbidden access to resource");
+                throw new UnauthorizedException("Access denied");
+            case NOT_FOUND:
+                log.error("Resource not found");
+                throw new UnauthorizedException("Resource not found");
+            default:
+                log.error("HTTP error occurred: {}", e.getStatusCode());
+                throw e;
+        }
+    }
+
+    @VisibleForTesting
+    public void setSleepTimeMultiplier(int multiplier) {
+        sleepTimeMultiplier = multiplier;
+    }
+}

@@ -35,4 +35,5 @@ public class ConfluenceSourceConfig extends AtlassianSourceConfig implements Cra
     public String getOauth2UrlContext() {
         return "confluence";
     }
+
 }

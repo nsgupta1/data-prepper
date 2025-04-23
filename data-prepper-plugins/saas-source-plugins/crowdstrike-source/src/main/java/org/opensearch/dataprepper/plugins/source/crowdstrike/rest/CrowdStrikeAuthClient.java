@@ -39,7 +39,6 @@ public class CrowdStrikeAuthClient {
     private static final String EXPIRE_IN = "expires_in";
 
 
-
     public CrowdStrikeAuthClient(final CrowdStrikeSourceConfig sourceConfig) {
         AuthenticationConfig authConfig = sourceConfig.getAuthenticationConfig();
         this.clientId = authConfig.getClientId();

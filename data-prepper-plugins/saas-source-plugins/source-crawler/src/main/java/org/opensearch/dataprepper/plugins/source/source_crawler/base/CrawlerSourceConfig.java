@@ -7,6 +7,8 @@ public interface CrawlerSourceConfig {
 
     int DEFAULT_NUMBER_OF_WORKERS = 1;
 
+    int getNumberOfWorkers();
+
     /**
      * Boolean to indicate if acknowledgments enabled for this source
      *

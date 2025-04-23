@@ -16,6 +16,7 @@ import org.opensearch.dataprepper.plugins.source.source_crawler.CrawlerApplicati
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.Crawler;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerSourcePlugin;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.PluginExecutorServiceProvider;
+import org.opensearch.dataprepper.plugins.source.source_crawler.base.TimeSliceCrawler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class CrowdStrikeSource extends CrawlerSourcePlugin {
                              final PluginFactory pluginFactory,
                              final AcknowledgementSetManager acknowledgementSetManager,
                              final CrowdStrikeAuthClient authClient,
-                             Crawler crawler, PluginExecutorServiceProvider executorServiceProvider) {
+                             final TimeSliceCrawler crawler, PluginExecutorServiceProvider executorServiceProvider) {
         super(PLUGIN_NAME, pluginMetrics, sourceConfig, pluginFactory, acknowledgementSetManager, crawler, executorServiceProvider);
         log.info("Creating CrowdStrike Source Plugin");
         this.sourceConfig = sourceConfig;

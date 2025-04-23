@@ -14,6 +14,8 @@ import org.opensearch.dataprepper.model.record.Record;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeAuthClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.Crawler;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.PluginExecutorServiceProvider;
+import org.opensearch.dataprepper.plugins.source.source_crawler.base.TimeSliceCrawler;
+
 import java.util.concurrent.ExecutorService;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -35,7 +37,7 @@ public class CrowdStrikeSourceTest {
     @Mock
     private AcknowledgementSetManager acknowledgementSetManager;
     @Mock
-    private Crawler crawler;
+    private TimeSliceCrawler crawler;
     @Mock
     private PluginExecutorServiceProvider executorServiceProvider;
     @Mock
