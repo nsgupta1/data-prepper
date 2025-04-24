@@ -65,7 +65,7 @@ public class TimeSliceCrawler implements Crawler {
 
     public void createPartition(Instant lastPollTime, EnhancedSourceCoordinator coordinator) {
         int days = client.getLookBackDays();
-        if (lastPollTime == Instant.EPOCH) {
+        if (lastPollTime == Instant.EPOCH && days > 0) {
             Instant initialDate = Instant.now();
             for (int i = 0; i < days; i++) {
                 SaasWorkerProgressState state = new SaasWorkerProgressState();
