@@ -25,7 +25,7 @@ public class CrowdStrikeService {
         this.searchResultsFoundCounter = pluginMetrics.counter(SEARCH_RESULTS_FOUND);
     }
 
-    public CrowdStrikeApiResponse getAllContent(Long startTime, Long endTime, String paginationLink, String bearerToken) {
-        return crowdStrikeRestClient.getAllContent(startTime, endTime, paginationLink, bearerToken);
+    public CrowdStrikeApiResponse getAllContent(Long startTime, Long endTime, String paginationLink) {
+        return crowdStrikeRestClient.getAllContent(startTime, endTime, paginationLink);
     }
 }

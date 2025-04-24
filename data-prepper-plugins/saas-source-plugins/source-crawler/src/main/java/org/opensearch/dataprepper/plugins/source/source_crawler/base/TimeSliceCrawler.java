@@ -46,8 +46,8 @@ public class TimeSliceCrawler implements Crawler {
         LeaderProgressState leaderProgressState = leaderPartition.getProgressState().get();
         // Leader state is always saved in UTC since the timestamps in the api response are always in UTC
         Instant lastPollTime = leaderProgressState.getLastPollTime();
-        createPartition(lastPollTime,coordinator);
-        Instant latestModifiedTime = lastPollTime;
+        createPartition(lastPollTime, coordinator);
+        Instant latestModifiedTime =  Instant.now();
         // Check point leader progress state at every minute interval.
         updateLeaderProgressState(leaderPartition, latestModifiedTime, coordinator);
         long crawlTimeMillis = System.currentTimeMillis() - startTime;
@@ -64,12 +64,13 @@ public class TimeSliceCrawler implements Crawler {
     }
 
     public void createPartition(Instant lastPollTime, EnhancedSourceCoordinator coordinator) {
+        int days = client.getLookBackDays();
         if (lastPollTime == Instant.EPOCH) {
             Instant initialDate = Instant.now();
-            for (int i = 0; i < 90; i++) {
+            for (int i = 0; i < days; i++) {
                 SaasWorkerProgressState state = new SaasWorkerProgressState();
                 state.setExportStartTime(initialDate.minus(Duration.ofDays(i)));
-                SaasSourcePartition sourcePartition = new SaasSourcePartition(state, "last_updated"+"|"+  UUID.randomUUID());
+                SaasSourcePartition sourcePartition = new SaasSourcePartition(state, "last_updated"+"|"+ i);
                 coordinator.createPartition(sourcePartition);
             }
         } else {

@@ -3,6 +3,7 @@ package org.opensearch.dataprepper.plugins.source.crowdstrike.configuration;
 import jakarta.validation.constraints.AssertTrue;
 import lombok.Getter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Setter;
 
 /**
  * Configuration class for authentication with the CrowdStrike API.

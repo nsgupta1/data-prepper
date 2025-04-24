@@ -25,7 +25,10 @@ public interface CrawlerClient {
      * @return returns an {@link Iterator} of {@link ItemInfo}
      */
     Iterator<ItemInfo> listItems(Instant lastPollTime);
-    
+
+    default int getLookBackDays(){
+        return 0;
+    };
 
     /**
      * Method for executing a particular partition or a chunk of work

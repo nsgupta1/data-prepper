@@ -5,7 +5,6 @@ import org.opensearch.dataprepper.metrics.PluginMetrics;
 import org.opensearch.dataprepper.model.acknowledgements.AcknowledgementSetManager;
 import org.opensearch.dataprepper.model.annotations.DataPrepperPlugin;
 import org.opensearch.dataprepper.model.annotations.DataPrepperPluginConstructor;
-import org.opensearch.dataprepper.model.annotations.Experimental;
 import org.opensearch.dataprepper.model.buffer.Buffer;
 import org.opensearch.dataprepper.model.event.Event;
 import org.opensearch.dataprepper.model.plugin.PluginFactory;
@@ -13,7 +12,6 @@ import org.opensearch.dataprepper.model.record.Record;
 import org.opensearch.dataprepper.model.source.Source;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeAuthClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.CrawlerApplicationContextMarker;
-import org.opensearch.dataprepper.plugins.source.source_crawler.base.Crawler;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerSourcePlugin;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.PluginExecutorServiceProvider;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.TimeSliceCrawler;
@@ -28,7 +26,6 @@ import static org.opensearch.dataprepper.plugins.source.crowdstrike.utils.Consta
  * 🚧 Work in progress — under active development.
  * Not ready for production use.
  */
-@Experimental
 @DataPrepperPlugin(name = PLUGIN_NAME,
         pluginType = Source.class,
         pluginConfigurationType = CrowdStrikeSourceConfig.class,
@@ -57,7 +54,7 @@ public class CrowdStrikeSource extends CrawlerSourcePlugin {
     public void start(Buffer<Record<Event>> buffer) {
         log.info("Starting CrowdStrike Source Plugin...");
         authClient.initCredentials();
-        // super.start(buffer);
+        super.start(buffer);
     }
 
     @Override

@@ -12,7 +12,6 @@ import org.opensearch.dataprepper.plugins.source.crowdstrike.models.CrowdStrikeI
 import org.opensearch.dataprepper.plugins.source.crowdstrike.models.ThreatIndicator;
 import org.opensearch.dataprepper.plugins.source.crowdstrike.rest.CrowdStrikeAuthClient;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerClient;
-import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerSourceConfig;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.PluginExecutorServiceProvider;
 import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.state.SaasWorkerProgressState;
 import org.opensearch.dataprepper.plugins.source.source_crawler.model.ItemInfo;
@@ -38,32 +37,37 @@ public class CrowdStrikeClient implements CrawlerClient {
     CrowdStrikeService crowdStrikeService;
     private static final Logger log = LoggerFactory.getLogger(CrowdStrikeClient.class);
     private final ExecutorService executorService;
-    private final CrawlerSourceConfig configuration;
+    private final CrowdStrikeSourceConfig configuration;
+    private final CrowdStrikeAuthClient authClient;
     private final int bufferWriteTimeoutInSeconds = 10;
     private ObjectMapper objectMapper = new ObjectMapper();
     private Instant lastPollTime;
-    private final CrowdStrikeAuthClient authClient;
 
 
     public CrowdStrikeClient(CrowdStrikeService crowdStrikeService,
                              PluginExecutorServiceProvider executorServiceProvider,
-                             CrawlerSourceConfig sourceConfig, CrowdStrikeAuthClient authClient) {
-        this.authClient = authClient;
+                             CrowdStrikeSourceConfig sourceConfig,
+                             CrowdStrikeAuthClient authClient) {
         log.info("Creating CrowdStrike Crawler");
         this.crowdStrikeService = crowdStrikeService;
         this.executorService = executorServiceProvider.get();
         this.configuration = sourceConfig;
+        this.authClient = authClient;
         log.info("Created CrowdStrike Crawler");
     }
+
     @Override
     public Iterator<ItemInfo> listItems(Instant lastPollTime) {
         return null;
     }
 
     @Override
+    public int getLookBackDays() {
+        return configuration.getLookBackDays();
+    }
+
+    @Override
     public void executePartition(SaasWorkerProgressState state, Buffer<Record<Event>> buffer, AcknowledgementSet acknowledgementSet) {
-        authClient.initCredentials();
-        String bearerToken = authClient.getBearerToken();
         Long startTime = state.getExportStartTime().getEpochSecond();
         Long endTime = state.getExportStartTime().plus(Duration.ofMinutes(2)).getEpochSecond();
         StringBuilder fql = new StringBuilder()
@@ -74,7 +78,8 @@ public class CrowdStrikeClient implements CrawlerClient {
         log.info("FQL query: {}", fql);
         String paginationLink = null;
         do {
-            CrowdStrikeApiResponse crowdStrikeResponse = crowdStrikeService.getAllContent(startTime, endTime, paginationLink, bearerToken);
+            authClient.refreshToken();
+            CrowdStrikeApiResponse crowdStrikeResponse = crowdStrikeService.getAllContent(startTime, endTime, paginationLink);
             CrowdStrikeIndicatorResult searchContentItems = crowdStrikeResponse.getBody();
             List<ThreatIndicator> contentList = new ArrayList<>(searchContentItems.getResults());
             log.info(String.valueOf(contentList.size()));

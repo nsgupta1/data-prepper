@@ -6,5 +6,6 @@ package org.opensearch.dataprepper.plugins.source.crowdstrike.utils;
 public class Constants {
 
     public static final String PLUGIN_NAME = "crowdstrike";
+    public static final int MAX_RETRIES = 6;
 
 }

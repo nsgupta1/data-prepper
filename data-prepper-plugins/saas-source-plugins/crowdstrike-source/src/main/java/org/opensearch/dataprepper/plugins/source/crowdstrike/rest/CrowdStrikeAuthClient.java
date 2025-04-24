@@ -37,6 +37,7 @@ public class CrowdStrikeAuthClient {
     private static final String OAUTH_TOKEN_URL = "https://api.crowdstrike.com/oauth2/token";
     private static final String ACCESS_TOKEN = "access_token";
     private static final String EXPIRE_IN = "expires_in";
+    private final Object tokenRenewLock = new Object();
 
 
     public CrowdStrikeAuthClient(final CrowdStrikeSourceConfig sourceConfig) {
@@ -89,6 +90,18 @@ public class CrowdStrikeAuthClient {
      * Refreshes the bearer token by retrieving a new one from CrowdStrike.
      */
     public void refreshToken() {
-
+        Instant currentTime = Instant.now();
+        if (expireTime.isAfter(currentTime)) {
+            //There is still time to renew or someone else must have already renewed it
+            return;
+        }
+        synchronized (tokenRenewLock) {
+            if (expireTime.isAfter(currentTime)) {
+                //Someone else must have already renewed it
+                return;
+            }
+            log.info("Renewing authentication token for CrowdStrike Connector.");
+            getAuthToken();
+        }
     }
 }
