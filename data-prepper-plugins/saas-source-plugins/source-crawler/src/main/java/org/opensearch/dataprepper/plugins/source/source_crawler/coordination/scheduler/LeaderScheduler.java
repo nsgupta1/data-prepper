@@ -21,7 +21,7 @@ public class LeaderScheduler implements Runnable {
     /**
      * Default interval to run lease check and shard discovery
      */
-    private static final Duration DEFAULT_LEASE_INTERVAL = Duration.ofMinutes(1);
+    private static final Duration DEFAULT_LEASE_INTERVAL = Duration.ofMinutes(10);
     @Setter
     private Duration leaseInterval;
     private LeaderPartition leaderPartition;

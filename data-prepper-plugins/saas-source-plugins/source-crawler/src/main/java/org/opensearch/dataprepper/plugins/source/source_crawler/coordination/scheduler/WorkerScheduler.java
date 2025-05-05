@@ -11,8 +11,8 @@ import org.opensearch.dataprepper.model.source.coordinator.enhanced.EnhancedSour
 import org.opensearch.dataprepper.model.source.coordinator.enhanced.EnhancedSourcePartition;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.Crawler;
 import org.opensearch.dataprepper.plugins.source.source_crawler.base.CrawlerSourceConfig;
+import org.opensearch.dataprepper.plugins.source.source_crawler.base.SaasWorkerProgressState;
 import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.partition.SaasSourcePartition;
-import org.opensearch.dataprepper.plugins.source.source_crawler.coordination.state.SaasWorkerProgressState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ public class WorkerScheduler implements Runnable {
     private static final Duration ACKNOWLEDGEMENT_SET_TIMEOUT = Duration.ofSeconds(20);
     private static final Logger log = LoggerFactory.getLogger(WorkerScheduler.class);
     private static final int RETRY_BACKOFF_ON_EXCEPTION_MILLIS = 5_000;
-    private static final Duration DEFAULT_SLEEP_DURATION_MILLIS = Duration.ofMillis(10000);
+    private static final Duration DEFAULT_SLEEP_DURATION_MILLIS = Duration.ofMinutes(10);
     private final Counter parititionsCompletedCounter;
     private final Counter parititionsFailedCounter;
     private final EnhancedSourceCoordinator sourceCoordinator;
@@ -84,7 +84,7 @@ public class WorkerScheduler implements Runnable {
                 } else {
                     log.debug("No partition available. This thread will sleep for {}", DEFAULT_SLEEP_DURATION_MILLIS);
                     try {
-                        Thread.sleep(DEFAULT_SLEEP_DURATION_MILLIS.toMillis());
+                        Thread.sleep(DEFAULT_SLEEP_DURATION_MILLIS.toMinutes());
                     } catch (final InterruptedException e) {
                         log.info("InterruptedException occurred");
                         break;
